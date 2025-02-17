@@ -128,7 +128,7 @@ class Models:
         objective='reg:absoluteerror',
         n_estimators=50000, # 3900
         learning_rate=0.04,
-        max_depth=8, # 7
+        max_depth=7, # 7
         colsample_bytree=0.95,
         alpha=8,
         random_state=seed,
