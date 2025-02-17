@@ -16,7 +16,9 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_percentage_error as mape
-# from catboost import CatBoostRegressor
+from sklearn.ensemble import StackingRegressor
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import GridSearchCV
 
 import torch
 from torch.utils.data import TensorDataset, DataLoader
@@ -26,7 +28,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 seed = random.randint(1, 100000)
 random.seed(seed)
 
-seed = 228
+seed = 24919
 
 print(f"seed: {seed}")
 
@@ -41,20 +43,49 @@ data['Город'] = encoder.fit_transform(data['Город'])
 data['Ктгр_энергоэффективности'] = encoder.fit_transform(data['Ктгр_энергоэффективности'])
 data['Ктгр_вредных_выбросов'] = encoder.fit_transform(data['Ктгр_вредных_выбросов'])
 
+data['Соотношение_этажей'] = data['Этаж'] / data['Верхний_этаж']
+data['Эффективность_энергии'] = data['Ктгр_энергоэффективности'] / (data['Расход_тепла'] + 1)
+
+# Логарифмирование числовых признаков с большим разбросом
+data['Площадь_лог'] = np.log1p(data['Площадь'])
+
 data.fillna(-1, inplace=True)
 
 # Разделяем данные на признаки (X) и целевую переменную (y)
 y = data['Цена'].copy()
-X = data[['Тип_жилья', 'Индекс', 'Площадь', 'Расход_тепла', 'Кво_комнат', 'Кво_фото',
-          'Нлч_гаража', 'Нлч_кондиционера', 'Верхний_этаж', 'Город', 'Этаж', 'Кво_вредных_выбросов',
-          'Ктгр_вредных_выбросов',
-          'Размер_участка', 'Нлч_балкона', 'Ктгр_энергоэффективности', 'Направление', 'Кво_спален',
-          'Кво_ванных', 'Нлч_парковки', 'Нлч_террасы', 'Нлч_подвала', 'Широта', 'Долгота']]
 
-X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.25, random_state=seed)
+X = data[
+    ['Эффективность_энергии', 'Площадь_лог', 'Тип_жилья', 'Индекс',
+     'Площадь', 'Расход_тепла', 'Кво_комнат', 'Кво_фото',
+     'Нлч_гаража', 'Нлч_кондиционера', 'Верхний_этаж', 'Город', 'Этаж', 'Кво_вредных_выбросов',
+     'Ктгр_вредных_выбросов',
+     'Размер_участка', 'Нлч_балкона', 'Ктгр_энергоэффективности', 'Направление', 'Кво_спален',
+     'Кво_ванных', 'Нлч_парковки', 'Нлч_террасы', 'Нлч_подвала', 'Широта', 'Долгота']]
+
+cat_features = ['Тип_жилья', 'Город', 'Ктгр_энергоэффективности', 'Ктгр_вредных_выбросов', 'Направление']
+
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.000000025, random_state=seed)
+
+sample_weight = [1.0] * len(X_train)
+
+sample_weight[4] = 10.0
+sample_weight[11] = 5.0
+sample_weight[12] = 5.0
+sample_weight[6] = 5.0
+sample_weight[8] = 5.0
+sample_weight[13] = 5.0
+sample_weight[18] = 5.0
+sample_weight[2] = 10.0
+sample_weight[24] = 5.0
+sample_weight[25] = 5.0
+# sample_weight[] = 5.0
+# sample_weight[] = 5.0
+# sample_weight[] = 5.0
+
+
 
 # Масштабируем данные
-scaler = MaxAbsScaler()
+scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_val_scaled = scaler.transform(X_val)
 
@@ -69,18 +100,10 @@ y_val_tensor = torch.Tensor(y_val.values)
 train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
 val_dataset = TensorDataset(X_val_tensor, y_val_tensor)
 
-batch_size = 8
+batch_size = 32
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
-# models = [LinearRegression(),
-#           KNeighborsRegressor(n_neighbors=6),
-#           RandomForestRegressor(n_estimators=600, random_state=seed),
-#           SVR(kernel='rbf'),
-#           xg.XGBRegressor(objective='reg:absoluteerror', n_estimators=600, random_state=seed),
-#           SGDRegressor(tol=1e-4)]
-
-cat_features = [0, 9, 15, 12, 16]
 
 class Models:
     KNeighborsRegressor_model = KNeighborsRegressor(
@@ -103,16 +126,16 @@ class Models:
 
     XGBRegressor_model = xg.XGBRegressor(
         objective='reg:absoluteerror',
-        n_estimators=6000,
-        learning_rate=0.05,
+        n_estimators=19900, # 3900
+        learning_rate=0.04,
         max_depth=7,
         colsample_bytree=0.95,
         alpha=8,
         random_state=seed,
-        min_child_weight = 35,
+        min_child_weight=35,
     )
     CatBoostRegressor_model = catboost.CatBoostRegressor(
-        iterations=2000,
+        iterations=6000,
         learning_rate=0.07,
         depth=8,
         l2_leaf_reg=3,
@@ -121,10 +144,36 @@ class Models:
         early_stopping_rounds=100,
         random_seed=seed,
         verbose=100,
-        loss_function = 'MAE',  # 'MAE', 'RMSE', 'MAPE'
+        loss_function='MAE',  # 'MAE', 'RMSE', 'MAPE'
         grow_policy='Lossguide',
         max_leaves=64  # Максимальное число листьев при Lossguide
-        )
+    )
+    estimators = [
+        ('xgb', xg.XGBRegressor(
+        objective='reg:absoluteerror',
+        n_estimators=3900,
+        learning_rate=0.04,
+        max_depth=7,
+        colsample_bytree=0.95,
+        alpha=8,
+        random_state=seed,
+        min_child_weight=35)),
+        ('catboost', catboost.CatBoostRegressor(
+        iterations=2000,
+        learning_rate=0.07,
+        depth=8,
+        l2_leaf_reg=3,
+        # cat_features=cat_features,
+        eval_metric='R2',
+        early_stopping_rounds=100,
+        random_seed=seed,
+        verbose=100,
+        loss_function='MAE',  # 'MAE', 'RMSE', 'MAPE'
+        grow_policy='Lossguide',
+        max_leaves=64))
+    ]
+    stacking_model = StackingRegressor(estimators=estimators, final_estimator=Ridge())
+
 
 
 models = [Models.XGBRegressor_model]
@@ -134,7 +183,7 @@ TestModels = pd.DataFrame(columns=['Model', 'R2', 'MSE', 'RMSE', 'MAPE'])
 # Итерация по моделям
 for model in models:
     model_name = str(model.__class__.__name__)
-    model.fit(X_train, y_train)
+    model.fit(X_train, y_train, sample_weight=sample_weight)
 
     # Вычисляем метрики
     r2_val = r2_score(y_val, model.predict(X_val))
@@ -165,9 +214,7 @@ for model in models:
     else:
         loaded_models[model_name] = joblib.load(model_path)  # Загрузка модели с использованием joblib
 
-
 print(TestModels)
-
 
 # # Преобразуем категориальные признаки в тип category
 # data['Тип_жилья'] = data['Тип_жилья'].astype("category")
