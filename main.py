@@ -7,6 +7,7 @@ import joblib
 import warnings
 
 import xgboost as xg
+import catboost
 
 from sklearn.preprocessing import StandardScaler, LabelEncoder, RobustScaler, MinMaxScaler, MaxAbsScaler
 from sklearn.model_selection import train_test_split
@@ -72,13 +73,14 @@ batch_size = 8
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
-
 # models = [LinearRegression(),
 #           KNeighborsRegressor(n_neighbors=6),
 #           RandomForestRegressor(n_estimators=600, random_state=seed),
 #           SVR(kernel='rbf'),
 #           xg.XGBRegressor(objective='reg:absoluteerror', n_estimators=600, random_state=seed),
 #           SGDRegressor(tol=1e-4)]
+
+cat_features = [0, 9, 15, 12, 16]
 
 class Models:
     KNeighborsRegressor_model = KNeighborsRegressor(
@@ -109,17 +111,23 @@ class Models:
         random_state=seed,
         min_child_weight = 35,
     )
-    # CatBoostRegressor_model = CatBoostRegressor(
-    #     iterations=500,
-    #     learning_rate=0.05,
-    #     depth=16,
-    #     l2_leaf_reg=3,
-    #     random_seed=seed,
-    #     verbose=False
-    #     )
+    CatBoostRegressor_model = catboost.CatBoostRegressor(
+        iterations=5000,
+        learning_rate=0.07,
+        depth=8,
+        l2_leaf_reg=3,
+        cat_features=cat_features,
+        eval_metric='R2',
+        early_stopping_rounds=100,
+        random_seed=seed,
+        verbose=100,
+        loss_function = 'MAE',  # 'MAE', 'RMSE', 'MAPE'
+        grow_policy='Lossguide',
+        max_leaves=64  # Максимальное число листьев при Lossguide
+        )
 
 
-models = [Models.XGBRegressor_model]
+models = [Models.CatBoostRegressor_model]
 
 TestModels = pd.DataFrame(columns=['Model', 'R2', 'MSE', 'RMSE', 'MAPE'])
 

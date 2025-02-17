@@ -1,5 +1,5 @@
 from sklearn.preprocessing import LabelEncoder
-
+import time
 from main import model, model_name, seed
 import pandas as pd
 
@@ -29,4 +29,4 @@ y_pred = model.predict(X_test)
 
 data_test["Цена"] = y_pred
 
-data_test[["id", "Цена"]].to_csv(f'public_test_predict_seed_{seed}_{model_name}.csv', index=False)
+data_test[["id", "Цена"]].to_csv(f'public_test_predict_seed_{seed}_{model_name}_{str(time.time_ns())}.csv', index=False)
