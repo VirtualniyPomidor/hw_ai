@@ -26,7 +26,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 seed = random.randint(1, 100000)
 random.seed(seed)
 
-seed = 228
+# seed = 228
 
 print(f"seed: {seed}")
 
@@ -103,7 +103,7 @@ class Models:
 
     XGBRegressor_model = xg.XGBRegressor(
         objective='reg:absoluteerror',
-        n_estimators=900,
+        n_estimators=3000,
         learning_rate=0.05,
         max_depth=7,
         colsample_bytree=0.95,
@@ -112,7 +112,7 @@ class Models:
         min_child_weight = 35,
     )
     CatBoostRegressor_model = catboost.CatBoostRegressor(
-        iterations=5000,
+        iterations=2000,
         learning_rate=0.07,
         depth=8,
         l2_leaf_reg=3,
@@ -127,7 +127,7 @@ class Models:
         )
 
 
-models = [Models.CatBoostRegressor_model]
+models = [Models.XGBRegressor_model]
 
 TestModels = pd.DataFrame(columns=['Model', 'R2', 'MSE', 'RMSE', 'MAPE'])
 

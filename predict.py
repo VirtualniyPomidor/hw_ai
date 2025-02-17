@@ -1,7 +1,8 @@
 from sklearn.preprocessing import LabelEncoder
-import time
+from datetime import datetime
 from main import model, model_name, seed
 import pandas as pd
+import os
 
 data_test = pd.read_csv('public_test.csv')
 
@@ -29,4 +30,12 @@ y_pred = model.predict(X_test)
 
 data_test["Цена"] = y_pred
 
-data_test[["id", "Цена"]].to_csv(f'public_test_predict_seed_{seed}_{model_name}_{str(time.time_ns())}.csv', index=False)
+name = f'public_test_predict_seed_{seed}_{model_name}_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+
+path = 'tests'
+os.makedirs(path, exist_ok=True)
+
+full_path = os.path.join(path, name)
+data_test[["id", "Цена"]].to_csv(full_path, index=False)
+
+print(f"Файл сохранен: {full_path}")
