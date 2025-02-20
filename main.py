@@ -28,7 +28,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 seed = random.randint(1, 100000)
 random.seed(seed)
 
-seed = 24919
+seed = 78157
+# seed = 24919
 
 print(f"seed: {seed}")
 
@@ -64,15 +65,16 @@ X = data[
 
 cat_features = ['Тип_жилья', 'Город', 'Ктгр_энергоэффективности', 'Ктгр_вредных_выбросов', 'Направление']
 
-X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.000000025, random_state=seed)
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.001, random_state=seed)
 
 sample_weight = [1.0] * len(X_train)
 
 sample_weight[4] = 10.0
 sample_weight[11] = 5.0
 sample_weight[12] = 5.0
-sample_weight[6] = 5.0
-sample_weight[8] = 5.0
+sample_weight[6] = 10.0
+sample_weight[6] = 10.0
+sample_weight[8] = 10.0
 sample_weight[13] = 5.0
 sample_weight[18] = 5.0
 sample_weight[2] = 10.0
@@ -126,7 +128,7 @@ class Models:
 
     XGBRegressor_model = xg.XGBRegressor(
         objective='reg:absoluteerror',
-        n_estimators=50000, # 3900
+        n_estimators=3900, # 3900
         learning_rate=0.04,
         max_depth=7, # 7
         colsample_bytree=0.95,
