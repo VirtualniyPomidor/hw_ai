@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import joblib
 from main_add import seed
-from datetime import datetime
 
 # Загрузка тестовых данных
 test_data = pd.read_csv('public_test.csv')
@@ -26,5 +25,5 @@ preds_log = stack_model.predict(X_test)
 preds = np.expm1(preds_log)  # Обратное преобразование
 
 # Сохранение
-name = f'public_test_predict_seed_{seed}_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
-pd.DataFrame({'id': test_data.id, 'Цена': preds}).to_csv(name, index=False)
+name = f'public_test_predict_seed_{seed}_{model_name}_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+pd.DataFrame({'id': test_data.id, 'Цена': preds}).to_csv(f'submission_{seed}.csv', index=False)
