@@ -86,7 +86,7 @@ xgb_model = xg.XGBRegressor(
 )
 
 cat_model = catboost.CatBoostRegressor(
-    iterations=6000,
+    iterations=6000, #6000
     learning_rate=0.07,
     depth=8,
     l2_leaf_reg=3,
@@ -100,15 +100,6 @@ cat_model = catboost.CatBoostRegressor(
     max_leaves=64  # Максимальное число листьев при Lossguide
 )
 
-# Стекинг моделей
-stack_model = StackingRegressor(
-    estimators=[
-        ('xgb', xgb_model),
-        ('cat', cat_model)
-    ],
-    final_estimator=Ridge(alpha=100)
-)
-
 # Обучение
 print("Training XGBoost...")
 xgb_model.fit(X_train, y_train, sample_weight=sample_weight)
@@ -116,6 +107,18 @@ xgb_model.fit(X_train, y_train, sample_weight=sample_weight)
 print("\nTraining CatBoost...")
 cat_model.fit(X_train, y_train, cat_features=cat_features,
              eval_set=(X_val, y_val), verbose=100)
+
+# Стекинг моделей
+stack_model = StackingRegressor(
+    estimators=[
+        ('xgb', xgb_model),
+        ('cat', cat_model)
+    ],
+    final_estimator=Ridge(alpha=100),
+    passthrough=False
+)
+
+
 
 print("\nTraining Stacking Model...")
 stack_model.fit(X_train, y_train)
