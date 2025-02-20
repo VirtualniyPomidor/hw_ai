@@ -29,7 +29,6 @@ seed = random.randint(1, 100000)
 random.seed(seed)
 
 seed = 78157
-# seed = 24919
 
 print(f"seed: {seed}")
 
