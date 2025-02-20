@@ -39,4 +39,9 @@ preds_log = stack_model.predict(X_test)
 preds = np.expm1(preds_log)  # Обратное преобразование
 
 # Сохранение
-pd.DataFrame({'id': test_data.id, 'Цена': preds}).to_csv(f'submission_{seed}.csv', index=False)
+name = f'public_test_predict_seed_add_{seed}_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+
+path = 'tests'
+os.makedirs(path, exist_ok=True)
+
+pd.DataFrame({'id': test_data.id, 'Цена': preds}).to_csv(name, index=False)
