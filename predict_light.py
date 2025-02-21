@@ -1,19 +1,16 @@
 import pandas as pd
 import numpy as np
-import tensorflow as tf
 import joblib
-from main_ai import seed
+from main_light import seed
 from datetime import datetime
-from sklearn.preprocessing import LabelEncoder
 import os
-import warnings
 
 # Загрузка данных
 test_data = pd.read_csv('public_test.csv')
 
-# Применение тех же преобразований
+# Список признаков (должен совпадать с main_light.py)
 features = [
-    'Площадь_лог', 'Тип_жилья', 'Индекс',
+    'Тип_жилья', 'Индекс',
     'Площадь', 'Расход_тепла', 'Кво_комнат', 'Кво_фото', 'Нлч_гаража',
     'Нлч_кондиционера', 'Верхний_этаж', 'Город', 'Этаж', 'Кво_вредных_выбросов',
     'Ктгр_вредных_выбросов', 'Размер_участка', 'Нлч_балкона',
@@ -21,26 +18,31 @@ features = [
     'Нлч_парковки', 'Нлч_террасы', 'Нлч_подвала', 'Широта', 'Долгота'
 ]
 
+# Обработка категориальных признаков
 cat_features = ['Тип_жилья', 'Город', 'Ктгр_энергоэффективности',
                 'Ктгр_вредных_выбросов', 'Направление']
 
-encoder = LabelEncoder()
+# Преобразование категорий
 for col in cat_features:
-    test_data[col] = encoder.fit_transform(test_data[col])
+    test_data[col] = test_data[col].astype('category')
 
-# Повтор предобработки
-test_data['Соотношение_этажей'] = test_data['Этаж'] / (test_data['Верхний_этаж'] + 1e-6)
-test_data['Площадь_лог'] = np.log1p(test_data['Площадь'])
-test_data.fillna(-1, inplace=True)
+# Заполнение пропусков
+for col in features:
+    if col in cat_features:
+        # Для категориальных признаков заполняем 'unknown'
+        test_data[col] = test_data[col].cat.add_categories('unknown')  # Добавляем 'unknown' в категории
+        test_data[col] = test_data[col].fillna('unknown')
+    else:
+        # Для числовых признаков заполняем медианой
+        test_data[col] = test_data[col].fillna(test_data[col].median())
 
-# Загрузка нормализатора и модели
-scaler = joblib.load(f'scaler_{seed}.pkl')
-model = tf.keras.models.load_model(f'nn_model_{seed}.keras')
+# Загрузка модели
+model = joblib.load(f'lgb_model_{seed}.pkl')
 
 # Предсказание
-X_test = scaler.transform(test_data[features])
-preds_log = model.predict(X_test).flatten()
-preds = np.expm1(preds_log)  # Обратное преобразование
+X_test = test_data[features]
+preds_log = model.predict(X_test)
+preds = np.expm1(preds_log)  # Обратное преобразование, если использовалось логарифмирование
 
 # Сохранение
 name = f'public_test_predict_seed_ai_{seed}_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
