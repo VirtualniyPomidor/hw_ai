@@ -6,9 +6,13 @@ import tensorflow as tf
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_percentage_error as mape
+import joblib
+import warnings
+import keras
 
 # Фиксация сидов
-seed = random.randint(1, 100000)
+# seed = random.randint(1, 100000)
+seed = 80978
 np.random.seed(seed)
 tf.random.set_seed(seed)
 print(f"Seed: {seed}")
@@ -18,7 +22,7 @@ data = pd.read_csv('train.csv')
 
 # Обработка категориальных признаков
 cat_features = ['Тип_жилья', 'Город', 'Ктгр_энергоэффективности',
-               'Ктгр_вредных_выбросов', 'Направление']
+                'Ктгр_вредных_выбросов', 'Направление']
 
 encoder = LabelEncoder()
 for col in cat_features:
@@ -27,16 +31,19 @@ for col in cat_features:
 # Инженерия признаков
 data['Соотношение_этажей'] = data['Этаж'] / (data['Верхний_этаж'] + 1e-6)
 data['Площадь_лог'] = np.log1p(data['Площадь'])
-data['Цена_лог'] = np.log1p(data['Цена'])  # Логарифмирование цели
+data['Цена_лог'] = np.log1p(data['Цена'])  # Логарифмирование целевой переменной
 
 # Заполнение пропусков
 data.fillna(-1, inplace=True)
 
 # Выбор признаков
 features = [
-    'Площадь_лог', 'Кво_комнат', 'Кво_ванных', 'Широта', 'Долгота',
-    'Ктгр_энергоэффективности', 'Размер_участка', 'Соотношение_этажей',
-    'Кво_спален', 'Кво_фото', 'Этаж', 'Город', 'Тип_жилья'
+    'Площадь_лог', 'Тип_жилья', 'Индекс',
+    'Площадь', 'Расход_тепла', 'Кво_комнат', 'Кво_фото', 'Нлч_гаража',
+    'Нлч_кондиционера', 'Верхний_этаж', 'Город', 'Этаж', 'Кво_вредных_выбросов',
+    'Ктгр_вредных_выбросов', 'Размер_участка', 'Нлч_балкона',
+    'Ктгр_энергоэффективности', 'Направление', 'Кво_спален', 'Кво_ванных',
+    'Нлч_парковки', 'Нлч_террасы', 'Нлч_подвала', 'Широта', 'Долгота'
 ]
 
 X = data[features]
@@ -62,25 +69,25 @@ model = tf.keras.Sequential([
 
 # Компиляция модели
 model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+    optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
     loss='mape',
     metrics=[tf.keras.metrics.MeanAbsolutePercentageError(name='MAPE')]
 )
 
 # Коллбэки
 early_stop = tf.keras.callbacks.EarlyStopping(
-    monitor='val_MAPE', patience=10, restore_best_weights=True)
+    monitor='val_MAPE', patience=1000, restore_best_weights=True)
 
 # Обучение
 history = model.fit(
     X_train, y_train,
     validation_data=(X_val, y_val),
-    epochs=200,
+    epochs=4000,
     batch_size=128,
     callbacks=[early_stop],
-    verbose=2
+    verbose=100
 )
 
 # Сохранение модели
-model.save(f'nn_model_{seed}')
+model.save(f'nn_model_{seed}.keras')
 joblib.dump(scaler, f'scaler_{seed}.pkl')

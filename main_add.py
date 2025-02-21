@@ -19,7 +19,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 # Фиксация сида
 seed = random.randint(1, 100000)
 
-# seed = 46899
+# seed = 55749
 
 np.random.seed(seed)
 print(f"seed: {seed}")
@@ -37,7 +37,6 @@ for col in cat_features:
 
 # Feature engineering
 data['Соотношение_этажей'] = data['Этаж'] / (data['Верхний_этаж'] + 1e-6)
-data['Эффективность_энергии'] = data['Ктгр_энергоэффективности'] / (data['Расход_тепла'] + 1)
 data['Площадь_лог'] = np.log1p(data['Площадь'])
 data['Цена_лог'] = np.log1p(data['Цена'])  # Логарифмирование целевой переменной
 
@@ -55,7 +54,7 @@ data.fillna(-1, inplace=True)
 
 # Выбор признаков
 features = [
-    'Эффективность_энергии', 'Площадь_лог', 'Тип_жилья', 'Индекс',
+    'Площадь_лог', 'Тип_жилья', 'Индекс',
     'Площадь', 'Расход_тепла', 'Кво_комнат', 'Кво_фото', 'Нлч_гаража',
     'Нлч_кондиционера', 'Верхний_этаж', 'Город', 'Этаж', 'Кво_вредных_выбросов',
     'Ктгр_вредных_выбросов', 'Размер_участка', 'Нлч_балкона',
@@ -67,7 +66,7 @@ X = data[features]
 y = data['Цена_лог']  # Используем логарифмированную целевую переменную
 
 # Разделение данных
-X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=seed)
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.002, random_state=seed)
 
 # Автоматическое определение весов для выбросов
 q95 = y_train.quantile(0.95)
