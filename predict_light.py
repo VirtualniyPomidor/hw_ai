@@ -17,11 +17,9 @@ features = ['Тип_жилья', 'Индекс',
 cat_features = ['Тип_жилья', 'Город', 'Ктгр_энергоэффективности',
                 'Ктгр_вредных_выбросов', 'Направление']
 
-# Преобразование категорий
 for col in cat_features:
     test_data[col] = test_data[col].astype('category')
 
-# Заполнение пропусков
 for col in features:
     if col in cat_features:
         test_data[col] = test_data[col].cat.add_categories('unknown')  # Добавляем 'unknown' в категории
@@ -29,16 +27,14 @@ for col in features:
     else:
         test_data[col] = test_data[col].fillna(test_data[col].median())
 
-# Загрузка модели
 model = joblib.load(f'lgb_model_{seed}.pkl')
 
-# Предсказание
 X_test = test_data[features]
 preds_log = model.predict(X_test)
 preds = np.expm1(preds_log)
 
 # Сохранение
-name = f'public_test_predict_seed_light_{seed}_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+name = f'public_test_predict_seed-{seed}_light_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
 path = 'tests'
 os.makedirs(path, exist_ok=True)
 full_path = os.path.join(path, name)
