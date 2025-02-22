@@ -5,10 +5,8 @@ from main_light import seed
 from datetime import datetime
 import os
 
-# Загрузка данных
 test_data = pd.read_csv('public_test.csv')
 
-# Список признаков (должен совпадать с main_light.py)
 features = ['Тип_жилья', 'Индекс',
             'Площадь', 'Расход_тепла', 'Кво_комнат', 'Кво_фото', 'Нлч_гаража',
             'Нлч_кондиционера', 'Верхний_этаж', 'Город', 'Этаж', 'Кво_вредных_выбросов',
@@ -16,14 +14,8 @@ features = ['Тип_жилья', 'Индекс',
             'Ктгр_энергоэффективности', 'Направление', 'Кво_спален', 'Кво_ванных',
             'Нлч_парковки', 'Нлч_террасы', 'Нлч_подвала', 'Широта', 'Долгота']
 
-# Обработка категориальных признаков
 cat_features = ['Тип_жилья', 'Город', 'Ктгр_энергоэффективности',
                 'Ктгр_вредных_выбросов', 'Направление']
-
-test_data.loc[(test_data['Тип_жилья'] == 'дом') & (test_data['Площадь'] > 400), 'Тип_жилья'] = 'вилла'
-test_data.loc[(test_data['Тип_жилья'] == 'вилла') & (test_data['Площадь'] < 400), 'Тип_жилья'] = 'дом'
-test_data.loc[(test_data['Тип_жилья'] == 'дом') & (test_data['Площадь'] < 35), 'Тип_жилья'] = 'разное'
-test_data.loc[(test_data['Тип_жилья'] == 'квартира') & (test_data['Площадь'] > 400), 'Тип_жилья'] = 'большая квартира'
 
 # Преобразование категорий
 for col in cat_features:
@@ -32,24 +24,18 @@ for col in cat_features:
 # Заполнение пропусков
 for col in features:
     if col in cat_features:
-        # Для категориальных признаков заполняем 'unknown'
         test_data[col] = test_data[col].cat.add_categories('unknown')  # Добавляем 'unknown' в категории
         test_data[col] = test_data[col].fillna('unknown')
     else:
-        # Для числовых признаков заполняем медианой
         test_data[col] = test_data[col].fillna(test_data[col].median())
 
 # Загрузка модели
 model = joblib.load(f'lgb_model_{seed}.pkl')
 
-# num_features = [col for col in features if col not in cat_features]
-# scaler = joblib.load(f'scaler_{seed}.pkl')
-# test_data[num_features] = scaler.transform(test_data[num_features])
-
 # Предсказание
 X_test = test_data[features]
 preds_log = model.predict(X_test)
-preds = np.expm1(preds_log)  # Обратное преобразование, если использовалось логарифмирование
+preds = np.expm1(preds_log)
 
 # Сохранение
 name = f'public_test_predict_seed_light_{seed}_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
