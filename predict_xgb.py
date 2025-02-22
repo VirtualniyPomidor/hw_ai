@@ -1,9 +1,11 @@
 import pandas as pd
 import numpy as np
 import joblib
-from main_light import seed
+from main_xgb import seed
 from datetime import datetime
 import os
+
+# seed = 80978
 
 # Загрузка данных
 test_data = pd.read_csv('public_test.csv')
@@ -20,11 +22,6 @@ features = ['Тип_жилья', 'Индекс',
 cat_features = ['Тип_жилья', 'Город', 'Ктгр_энергоэффективности',
                 'Ктгр_вредных_выбросов', 'Направление']
 
-test_data.loc[(test_data['Тип_жилья'] == 'дом') & (test_data['Площадь'] > 400), 'Тип_жилья'] = 'вилла'
-test_data.loc[(test_data['Тип_жилья'] == 'вилла') & (test_data['Площадь'] < 400), 'Тип_жилья'] = 'дом'
-test_data.loc[(test_data['Тип_жилья'] == 'дом') & (test_data['Площадь'] < 35), 'Тип_жилья'] = 'разное'
-test_data.loc[(test_data['Тип_жилья'] == 'квартира') & (test_data['Площадь'] > 400), 'Тип_жилья'] = 'большая квартира'
-
 # Преобразование категорий
 for col in cat_features:
     test_data[col] = test_data[col].astype('category')
@@ -40,11 +37,7 @@ for col in features:
         test_data[col] = test_data[col].fillna(test_data[col].median())
 
 # Загрузка модели
-model = joblib.load(f'lgb_model_{seed}.pkl')
-
-# num_features = [col for col in features if col not in cat_features]
-# scaler = joblib.load(f'scaler_{seed}.pkl')
-# test_data[num_features] = scaler.transform(test_data[num_features])
+model = joblib.load(f'xgb_model_{seed}.pkl')
 
 # Предсказание
 X_test = test_data[features]
@@ -52,7 +45,7 @@ preds_log = model.predict(X_test)
 preds = np.expm1(preds_log)  # Обратное преобразование, если использовалось логарифмирование
 
 # Сохранение
-name = f'public_test_predict_seed_light_{seed}_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+name = f'public_test_predict_seed_xgb_{seed}_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
 path = 'tests'
 os.makedirs(path, exist_ok=True)
 full_path = os.path.join(path, name)
