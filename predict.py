@@ -37,7 +37,7 @@ y_pred = model.predict(X_test)
 
 data_test["Цена"] = y_pred
 
-name = f'public_test_predict_seed_{seed}_{model_name}_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+name = f'public_test_predict_seed_basic_{seed}_{model_name}_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
 
 path = 'tests'
 os.makedirs(path, exist_ok=True)
